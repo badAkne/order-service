@@ -1,8 +1,9 @@
 package rhealth
 
 import (
-	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	"github.com/gin-gonic/gin"
+
+	rhandler "github.com/badAkne/order-service/internal/app/handler"
 )
 
 type handler struct{}

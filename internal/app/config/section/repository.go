@@ -20,7 +20,6 @@ type RepositoryPostgres struct {
 }
 
 func (p *RepositoryPostgres) DSN() string {
-
 	return fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		p.Host,
@@ -28,5 +27,4 @@ func (p *RepositoryPostgres) DSN() string {
 		p.Password,
 		p.Name,
 		p.Port)
-
 }

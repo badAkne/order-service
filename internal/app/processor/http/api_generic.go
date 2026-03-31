@@ -3,8 +3,9 @@ package rprocessor
 import (
 	"net/http"
 
-	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	"github.com/gin-gonic/gin"
+
+	rhandler "github.com/badAkne/order-service/internal/app/handler"
 )
 
 func GenericRegHealthCheck(r *gin.Engine, h rhandler.Health) {

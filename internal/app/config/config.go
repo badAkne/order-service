@@ -3,15 +3,16 @@ package config
 import (
 	"log"
 
-	"github.com/badAkne/order-service/internal/app/config/section"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+
+	"github.com/badAkne/order-service/internal/app/config/section"
 )
 
 type Config struct {
 	App        section.App
 	Repository section.Repository
-	//Broker     section.Broker
+	// Broker     section.Broker
 	Processor section.Processor
 	Monitor   section.Monitor
 }

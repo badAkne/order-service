@@ -6,9 +6,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/badAkne/order-service/internal/app/config/section"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
-	"github.com/gin-gonic/gin"
 )
 
 type Processor struct {
@@ -17,7 +18,7 @@ type Processor struct {
 
 func NewHTTP(
 	hHealth rhandler.Health,
-	//hOrder rhandler.Order,
+	// hOrder rhandler.Order,
 	cfg section.ProcessorWebServer,
 ) *Processor {
 	r := gin.Default()

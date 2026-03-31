@@ -9,7 +9,8 @@ import (
 func regRoute(router gin.IRouter,
 	method, path string,
 	handler gin.HandlerFunc,
-	name string) {
+	name string,
+) {
 	switch method {
 	case "GET":
 		router.GET(path, handler)

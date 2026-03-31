@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/badAkne/order-service/internal/app/config/section"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"github.com/badAkne/order-service/internal/app/config/section"
 )
 
 type Client struct {

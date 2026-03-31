@@ -30,5 +30,4 @@ func main() {
 	if err = proc.Run(); err != nil {
 		log.Fatal(err.Error())
 	}
-
 }
