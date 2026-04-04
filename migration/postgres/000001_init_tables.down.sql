@@ -1,0 +1,7 @@
+BEGIN;
+
+-- Дополните (не забывайте про CASCADE)
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+
+COMMIT;
