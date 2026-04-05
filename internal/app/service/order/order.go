@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/badAkne/order-service/internal/app/entity"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rservice "github.com/badAkne/order-service/internal/app/service"
-	"github.com/google/uuid"
 )
 
 type service struct {
@@ -45,7 +46,6 @@ func (s *service) Create(ctx context.Context, req entity.RequestOrderCreate) (en
 		createdOrder, txErr = s.repoOrder.Create(txCtx, order)
 		return txErr
 	})
-
 	if err != nil {
 		return entity.ResponseOrderCreate{}, fmt.Errorf("unable to create order: %w", err)
 	}
@@ -63,7 +63,6 @@ func (s *service) Get(ctx context.Context, guid uuid.UUID) (entity.ResponseOrder
 		order, txErr = s.repoOrder.Get(txCtx, guid)
 		return txErr
 	})
-
 	if err != nil {
 		return entity.ResponseOrderCreate{}, fmt.Errorf("unable to get order: %w", err)
 	}
@@ -80,11 +79,13 @@ func (s *service) Update(ctx context.Context, guid uuid.UUID, status string) (en
 		var txErr error
 
 		_, txErr = s.repoOrder.Update(txCtx, guid, status)
+		if txErr != nil {
+			return txErr
+		}
 		order, txErr = s.repoOrder.Get(txCtx, guid)
 
 		return txErr
 	})
-
 	if err != nil {
 		return entity.ResponseOrderCreate{}, fmt.Errorf("failed to update order: %w", err)
 	}
@@ -98,7 +99,6 @@ func (s *service) Delete(ctx context.Context, guid uuid.UUID) error {
 	err := s.repoOrder.OpenTx(ctx, func(txCtx context.Context) error {
 		return s.repoOrder.Delete(txCtx, guid)
 	})
-
 	if err != nil {
 		return fmt.Errorf("unable to delete order: %w", err)
 	}
@@ -147,7 +147,6 @@ func (s *service) convertToResponseCreate(order entity.Order, cartPrice float32)
 			Quantity:    item.Quantity,
 			UnitPrice:   item.UnitPrice,
 		})
-
 	}
 
 	return response

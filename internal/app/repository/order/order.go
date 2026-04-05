@@ -3,13 +3,14 @@ package porder
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+
 	"github.com/badAkne/order-service/internal/app/entity"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rcpostgres "github.com/badAkne/order-service/internal/app/repository/conn/postgres"
 	"github.com/badAkne/order-service/internal/app/repository/transaction"
 	"github.com/badAkne/order-service/internal/app/util"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type repoPG struct {
@@ -65,6 +66,7 @@ func (r *repoPG) Update(ctx context.Context, guid uuid.UUID, status string) (ent
 
 	return order, nil
 }
+
 func (r *repoPG) Delete(ctx context.Context, guid uuid.UUID) error {
 	db := rcpostgres.GetTxFromCtx(ctx, r.db)
 

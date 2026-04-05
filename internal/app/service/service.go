@@ -3,8 +3,9 @@ package rservice
 import (
 	"context"
 
-	"github.com/badAkne/order-service/internal/app/entity"
 	"github.com/google/uuid"
+
+	"github.com/badAkne/order-service/internal/app/entity"
 )
 
 type Order interface {

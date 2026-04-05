@@ -3,12 +3,13 @@ package rorder
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
 	"github.com/badAkne/order-service/internal/app/entity"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	rservice "github.com/badAkne/order-service/internal/app/service"
 	"github.com/badAkne/order-service/internal/pkg/http/httph"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type handlerOrder struct {

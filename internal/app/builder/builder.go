@@ -132,7 +132,7 @@ func (b *Builder) Run() {
 }
 
 func (b *Builder) BuildRepoConnPostgres() {
-	b.exec(true, func(b *Builder) {
+	b.exec(b.ctx != nil, func(b *Builder) {
 		cfg := b.cfg.Repository
 		conn, err := rcpostgres.NewConn(b.ctx, cfg.Postgres)
 		if err != nil {
