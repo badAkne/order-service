@@ -28,7 +28,7 @@ type validationFailedError struct {
 	originalErr validator.ValidationErrors
 }
 
-func (e validationFailedError) Error() string {
+func (e *validationFailedError) Error() string {
 	return "Validation failed"
 }
 
