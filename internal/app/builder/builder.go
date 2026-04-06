@@ -15,9 +15,14 @@ import (
 	"github.com/badAkne/order-service/internal/app/config"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	rhealth "github.com/badAkne/order-service/internal/app/handler/health"
+	rorder "github.com/badAkne/order-service/internal/app/handler/order"
 	"github.com/badAkne/order-service/internal/app/processor"
 	rprocessor "github.com/badAkne/order-service/internal/app/processor/http"
+	"github.com/badAkne/order-service/internal/app/repository"
 	rcpostgres "github.com/badAkne/order-service/internal/app/repository/conn/postgres"
+	porder "github.com/badAkne/order-service/internal/app/repository/order"
+	rservice "github.com/badAkne/order-service/internal/app/service"
+	morder "github.com/badAkne/order-service/internal/app/service/order"
 )
 
 type Builder struct {
@@ -28,6 +33,10 @@ type Builder struct {
 	cfg  config.Config
 
 	connPostgres *rcpostgres.Client
+
+	orderRepo    repository.Order
+	orderSerivce rservice.Order
+	orderHandler rhandler.Order
 
 	healthHandler rhandler.Health
 
@@ -96,8 +105,7 @@ func (b *Builder) buildConfig(args config.LoadArgs, injectors []func(*config.Con
 }
 
 func (b *Builder) BuildConfig(injectors ...func(c *config.Config)) {
-	// TODO: Поменять на true, линтер ругается, что дается только true
-	b.exec(b.ctx != nil, func(b *Builder) {
+	b.exec(true, func(b *Builder) {
 		b.buildConfig(config.LoadArgs{}, injectors)
 	})
 }
@@ -124,7 +132,7 @@ func (b *Builder) Run() {
 }
 
 func (b *Builder) BuildRepoConnPostgres() {
-	b.exec(true, func(b *Builder) {
+	b.exec(b.ctx != nil, func(b *Builder) {
 		cfg := b.cfg.Repository
 		conn, err := rcpostgres.NewConn(b.ctx, cfg.Postgres)
 		if err != nil {
@@ -136,12 +144,36 @@ func (b *Builder) BuildRepoConnPostgres() {
 	})
 }
 
+func (b *Builder) BuildRepoOrder() {
+	b.exec(true, func(b *Builder) {
+		repo, err := porder.NewRepo(b.ctx, b.connPostgres)
+		if err != nil {
+			b.err = err
+			return
+		}
+
+		b.orderRepo = repo
+	}, b.connPostgres)
+}
+
+func (b *Builder) BuildServiceOrder() {
+	b.exec(true, func(b *Builder) {
+		b.orderSerivce = morder.NewService(b.orderRepo)
+	}, b.orderRepo)
+}
+
+func (b *Builder) BuildHandlerHttpOrder() {
+	b.exec(true, func(b *Builder) {
+		b.orderHandler = rorder.NewHandler(b.orderSerivce)
+	}, b.orderSerivce)
+}
+
 func (b *Builder) BuildProcHttp() {
 	b.exec(true, func(b *Builder) {
-		procHttp := rprocessor.NewHTTP(b.healthHandler, nil, b.cfg.Processor.WebServer)
+		procHttp := rprocessor.NewHTTP(b.healthHandler, b.orderHandler, nil, b.cfg.Processor.WebServer)
 
 		b.processors = append(b.processors, procHttp)
-	}, b.healthHandler)
+	}, b.healthHandler, b.orderHandler)
 }
 
 func (b *Builder) waitForSignal(sig chan os.Signal, cancel func()) {

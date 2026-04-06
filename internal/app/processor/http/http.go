@@ -26,7 +26,7 @@ type Processor struct {
 
 func NewHTTP(
 	hHealth rhandler.Health,
-	// hOrder rhandler.Order,
+	hOrder rhandler.Order,
 	_ []httph.Middleware,
 	cfg section.ProcessorWebServer,
 ) *Processor {
@@ -42,13 +42,11 @@ func NewHTTP(
 		makeErrorMiddleware(),
 	)
 	GenericRegHealthCheck(r, hHealth)
-	/*
-		TODO: Раскомментировать, когда будет сделан order
-		v1 := router.Group("/v1")
-		{
-			v1GenericRegOrder(v1k hOrder)
-		}
-	*/
+
+	v1 := r.Group("/v1")
+	{
+		v1GenericRegOrder(v1, hOrder)
+	}
 
 	logRoutes(r)
 
