@@ -18,6 +18,7 @@ type Config struct {
 	// Broker     section.Broker
 	Processor section.Processor
 	Monitor   section.Monitor
+	Client    section.ClientCatalog
 }
 
 type LoadArgs struct {

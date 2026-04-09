@@ -6,6 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	OrderStatusPending   = "pending"
+	OrderStatusCancelled = "cancelled"
+	OrderStatusDelivered = "delivered"
+	OrderStatusShipped   = "shipped"
+)
+
 type Order struct {
 	ID            uint      `gorm:"column:id;not null;unique;autoIncrement"`
 	GUID          uuid.UUID `gorm:"column:guid;not null;primaryKey"`

@@ -2,27 +2,35 @@ package morder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
+	catalog "github.com/badAkne/order-service/internal/app/client"
 	"github.com/badAkne/order-service/internal/app/entity"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rservice "github.com/badAkne/order-service/internal/app/service"
 )
 
 type service struct {
-	repoOrder repository.Order
+	repoOrder     repository.Order
+	catalogClient *catalog.CatalogClient
 }
 
-func NewService(repoOrder repository.Order) rservice.Order {
+func NewService(repoOrder repository.Order, catalogClient *catalog.CatalogClient) rservice.Order {
 	return &service{
-		repoOrder: repoOrder,
+		repoOrder:     repoOrder,
+		catalogClient: catalogClient,
 	}
 }
 
 func (s *service) Create(ctx context.Context, req entity.RequestOrderCreate) (entity.ResponseOrderCreate, error) {
+	if err := s.validateProductsWithCatalog(ctx, req.Items); err != nil {
+		return entity.ResponseOrderCreate{}, err
+	}
+
 	var cartPrice float32
 	now := time.Now()
 
@@ -73,16 +81,30 @@ func (s *service) Get(ctx context.Context, guid uuid.UUID) (entity.ResponseOrder
 }
 
 func (s *service) Update(ctx context.Context, guid uuid.UUID, status string) (entity.ResponseOrderCreate, error) {
-	var order entity.Order
+	if err := s.validateStatus(status); err != nil {
+		return entity.ResponseOrderCreate{}, err
+	}
+	existingOrder, err := s.repoOrder.Get(ctx, guid)
+	if err != nil {
+		return entity.ResponseOrderCreate{}, err
+	}
 
-	err := s.repoOrder.OpenTx(ctx, func(txCtx context.Context) error {
+	if existingOrder.Status == entity.OrderStatusPending && status == entity.OrderStatusPending {
+		err := s.validatePricesBeforeShipping(ctx, existingOrder)
+		if err != nil {
+			return entity.ResponseOrderCreate{}, err
+		}
+	}
+
+	var updatedOrder entity.Order
+	err = s.repoOrder.OpenTx(ctx, func(txCtx context.Context) error {
 		var txErr error
 
 		_, txErr = s.repoOrder.Update(txCtx, guid, status)
 		if txErr != nil {
 			return txErr
 		}
-		order, txErr = s.repoOrder.Get(txCtx, guid)
+		updatedOrder, txErr = s.repoOrder.Get(txCtx, guid)
 
 		return txErr
 	})
@@ -90,9 +112,9 @@ func (s *service) Update(ctx context.Context, guid uuid.UUID, status string) (en
 		return entity.ResponseOrderCreate{}, fmt.Errorf("failed to update order: %w", err)
 	}
 
-	cartPrice := s.cartPrice(order.Items)
+	cartPrice := s.cartPrice(updatedOrder.Items)
 
-	return s.convertToResponseCreate(order, cartPrice), nil
+	return s.convertToResponseCreate(updatedOrder, cartPrice), nil
 }
 
 func (s *service) Delete(ctx context.Context, guid uuid.UUID) error {
@@ -114,7 +136,7 @@ func (s *service) convertReqProductItemsToProductItems(items []entity.RequestOrd
 		productItems = append(productItems, entity.OrderItem{
 			GUID:        uuid.New(),
 			OrderGUID:   orderGUID,
-			ProductGUID: orderGUID,
+			ProductGUID: item.ProductGUID,
 			Quantity:    int64(item.Quantity),
 			UnitPrice:   item.UnitPrice,
 		})
@@ -160,4 +182,67 @@ func (s *service) cartPrice(items []entity.OrderItem) float32 {
 	}
 
 	return cartPrice
+}
+
+func (s *service) validateProductsWithCatalog(ctx context.Context, items []entity.RequestOrderItemCreate) error {
+	if items == nil {
+		return errors.New("items is nil")
+	}
+
+	productsGUIDs := make([]uuid.UUID, len(items))
+	for i, item := range items {
+		productsGUIDs[i] = item.ProductGUID
+	}
+
+	catalogProducts, err := s.catalogClient.GetProducts(ctx, productsGUIDs)
+	if err != nil {
+		return entity.ErrCatalogServiceUnavailable
+	}
+
+	for _, item := range items {
+		catalogProduct := catalogProducts[item.ProductGUID.String()]
+		if item.UnitPrice != float32(catalogProduct.Price) {
+			return entity.ErrProductPriceMismatch
+		}
+	}
+
+	return nil
+}
+
+func (s *service) validateStatus(status string) error {
+	switch status {
+	case entity.OrderStatusCancelled:
+		return nil
+	case entity.OrderStatusDelivered:
+		return nil
+	case entity.OrderStatusPending:
+		return nil
+	case entity.OrderStatusShipped:
+		return nil
+	default:
+		return entity.ErrInvalidOrderStatus
+	}
+}
+
+func (s *service) validatePricesBeforeShipping(ctx context.Context, order entity.Order) error {
+	productGUIDs := make([]uuid.UUID, len(order.Items))
+
+	for i, item := range order.Items {
+		productGUIDs[i] = item.ProductGUID
+	}
+
+	catalogProducts, err := s.catalogClient.GetProducts(ctx, productGUIDs)
+	if err != nil {
+		return fmt.Errorf("failed to check product prices: %w", err)
+	}
+
+	for _, item := range order.Items {
+		catalogProduct := catalogProducts[item.ProductGUID.String()]
+
+		if item.UnitPrice != float32(catalogProduct.Price) {
+			return fmt.Errorf("cannot ship order: price for product %s has changed from %.2f to %.2f", item.ProductGUID, item.UnitPrice, catalogProduct.Price)
+		}
+	}
+
+	return nil
 }

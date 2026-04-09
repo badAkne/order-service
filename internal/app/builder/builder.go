@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
+	catalog "github.com/badAkne/order-service/internal/app/client"
 	"github.com/badAkne/order-service/internal/app/config"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	rhealth "github.com/badAkne/order-service/internal/app/handler/health"
@@ -39,6 +40,7 @@ type Builder struct {
 	orderHandler rhandler.Order
 
 	healthHandler rhandler.Health
+	catalogClient *catalog.CatalogClient
 
 	processors []processor.Processor
 
@@ -121,6 +123,14 @@ func (b *Builder) Run() {
 		log.Fatal().Err(b.err).Msg("Failed to initialize application")
 	}
 
+	defer func() {
+		if b.catalogClient != nil {
+			if err := b.catalogClient.Closer(); err != nil {
+				log.Error().Err(err).Msg("Error closing catalog client")
+			}
+		}
+	}()
+
 	log.Info().Msg("Application is initializing")
 	defer log.Info().Msg("Application is completed, GoodBye!")
 
@@ -144,6 +154,20 @@ func (b *Builder) BuildRepoConnPostgres() {
 	})
 }
 
+func (b *Builder) BuildCatalogClient() {
+	b.exec(true, func(b *Builder) {
+		catalogAddr := b.cfg.Client.GrpcAddr
+
+		catalogClient, err := catalog.NewCatalogClient(catalogAddr)
+		if err != nil {
+			b.err = fmt.Errorf("failed to create catalog client: %w", err)
+			return
+		}
+
+		b.catalogClient = catalogClient
+	}, b.cfg)
+}
+
 func (b *Builder) BuildRepoOrder() {
 	b.exec(true, func(b *Builder) {
 		repo, err := porder.NewRepo(b.ctx, b.connPostgres)
@@ -158,8 +182,8 @@ func (b *Builder) BuildRepoOrder() {
 
 func (b *Builder) BuildServiceOrder() {
 	b.exec(true, func(b *Builder) {
-		b.orderSerivce = morder.NewService(b.orderRepo)
-	}, b.orderRepo)
+		b.orderSerivce = morder.NewService(b.orderRepo, b.catalogClient)
+	}, b.orderRepo, b.catalogClient)
 }
 
 func (b *Builder) BuildHandlerHttpOrder() {

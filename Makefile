@@ -2,6 +2,8 @@
 # =============================================================================
 # Переменные
 # =============================================================================
+PROTO_DIRS = -I internal/catalog -I proto_deps/googleapis -I proto_deps/protovalidate/proto/protovalidate
+PROTO_FILES = $(shell find internal -name '*.proto')
 OUTPUT := ./bin/app
 GO_LINT_VERSION := 2.7.2
 GO_FILE := ./main.go
@@ -96,3 +98,13 @@ migrate-up:  ## Применить все миграции
 .PHONY: migrate-down
 migrate-down:  ## Откатить все миграции (используйте аккуратно)
 	@~/go/bin/migrate -database $(MIGRATION_DSN) -path $(CUR_MIGRATION_DIR) down -all
+
+.PHONY: gen
+gen:
+	rm -rf internal/catalog/gen
+	mkdir internal/catalog/gen
+	export PATH=$$PATH:$$HOME/go/bin && protoc $(PROTO_DIRS) \
+		--go_out=internal/catalog/gen --go_opt=paths=source_relative \
+		--go-grpc_out=internal/catalog/gen --go-grpc_opt=paths=source_relative \
+		--go-grpc_opt=require_unimplemented_servers=false \
+		$(PROTO_FILES)

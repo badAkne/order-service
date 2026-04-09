@@ -78,6 +78,8 @@ services:
     restart: always
     ports:
       - "8080:8080"  
+      - "8081:8081"
+      - "50051:50051"    
     depends_on:
       catalog-postgres:
         condition: service_healthy
@@ -85,8 +87,8 @@ services:
       POSTGRES_DB: "catalog_db"  
       POSTGRES_USER: "admin"
       POSTGRES_PASSWORD: "admin"
-      POSTGRES_HOST: "localhost"
-      POSTGRES_PORT: "5432"
+      POSTGRES_HOST: "catalog-postgres"
+      POSTGRES_PORT: "7432"
     networks:
       - backend_net
 
