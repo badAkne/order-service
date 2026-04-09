@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/badAkne/order-service/internal/catalog/gen/proto/v1"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
+
+	pb "github.com/badAkne/order-service/internal/catalog/gen/proto/v1"
 )
 
 type CatalogClient struct {
@@ -108,7 +109,7 @@ func (c *CatalogClient) handleError(err error) error {
 	case codes.NotFound:
 		return fmt.Errorf("product not found on catalog")
 	case codes.Unavailable:
-		return fmt.Errorf("catalog service unavaliable")
+		return fmt.Errorf("catalog service unavailaable")
 	case codes.InvalidArgument:
 		return fmt.Errorf("invalid request to catalog service: %s", st.Message())
 	default:
