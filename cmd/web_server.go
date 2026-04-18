@@ -39,6 +39,7 @@ func cmdWebServer(cCtx *cli.Context) error {
 	app.BuildServiceOrder()
 	app.BuildHandlerHttpOrder()
 
+	app.BuilMonitorPrometheus()
 	app.BuildProcHttp()
 
 	app.Run()

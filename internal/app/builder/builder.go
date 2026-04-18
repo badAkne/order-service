@@ -19,6 +19,7 @@ import (
 	rorder "github.com/badAkne/order-service/internal/app/handler/order"
 	"github.com/badAkne/order-service/internal/app/processor"
 	rprocessor "github.com/badAkne/order-service/internal/app/processor/http"
+	"github.com/badAkne/order-service/internal/app/processor/monitor"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rcpostgres "github.com/badAkne/order-service/internal/app/repository/conn/postgres"
 	porder "github.com/badAkne/order-service/internal/app/repository/order"
@@ -198,6 +199,19 @@ func (b *Builder) BuildProcHttp() {
 
 		b.processors = append(b.processors, procHttp)
 	}, b.healthHandler, b.orderHandler)
+}
+
+func (b *Builder) BuilMonitorPrometheus() {
+	b.exec(true, func(b *Builder) {
+		if !b.cfg.Monitor.Enabled {
+			log.Info().Msg("Monitoring disabled")
+			return
+		}
+
+		promProc := monitor.NewPrometheusObserver()
+		b.processors = append(b.processors, promProc)
+		log.Info().Msg("Monitoring enabled")
+	})
 }
 
 func (b *Builder) waitForSignal(sig chan os.Signal, cancel func()) {
