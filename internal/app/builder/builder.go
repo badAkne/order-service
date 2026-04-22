@@ -19,7 +19,7 @@ import (
 	rorder "github.com/badAkne/order-service/internal/app/handler/order"
 	"github.com/badAkne/order-service/internal/app/processor"
 	rprocessor "github.com/badAkne/order-service/internal/app/processor/http"
-	"github.com/badAkne/order-service/internal/app/processor/monitor"
+	mprocessor "github.com/badAkne/order-service/internal/app/processor/monitor"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rcpostgres "github.com/badAkne/order-service/internal/app/repository/conn/postgres"
 	porder "github.com/badAkne/order-service/internal/app/repository/order"
@@ -105,6 +105,7 @@ func (b *Builder) buildConfig(args config.LoadArgs, injectors []func(*config.Con
 	}
 
 	b.cfg = config.Root
+	mprocessor.NewSentryWriter(b.cfg.Meta.Load.Output, b.cfg.Monitor.Environment, b.cfg.Monitor.Sentry)
 }
 
 func (b *Builder) BuildConfig(injectors ...func(c *config.Config)) {
@@ -203,12 +204,12 @@ func (b *Builder) BuildProcHttp() {
 
 func (b *Builder) BuilMonitorPrometheus() {
 	b.exec(true, func(b *Builder) {
-		if !b.cfg.Monitor.Enabled {
+		if !b.cfg.Monitor.Prometheus.Enabled {
 			log.Info().Msg("Monitoring disabled")
 			return
 		}
 
-		promProc := monitor.NewPrometheusObserver()
+		promProc := mprocessor.NewPrometheusObserver()
 		b.processors = append(b.processors, promProc)
 		log.Info().Msg("Monitoring enabled")
 	})
