@@ -19,6 +19,13 @@ type Config struct {
 	Processor section.Processor
 	Monitor   section.Monitor
 	Client    section.ClientCatalog
+	Meta      Meta `ignore:"true"`
+}
+
+type Meta struct {
+	WorkDir    string
+	DotEnvPath string
+	Load       LoadArgs
 }
 
 type LoadArgs struct {
@@ -51,6 +58,8 @@ func Load(args LoadArgs) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to load condig")
 	}
+
+	Root.Meta.Load = args
 
 	err = envconfig.Process("APP", &Root)
 	if err != nil {
