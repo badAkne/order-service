@@ -34,6 +34,8 @@ func cmdWebServer(cCtx *cli.Context) error {
 	app.BuildConfig()
 	app.BuildRepoConnPostgres()
 
+	app.BuildMonitorOpenTelemetry()
+
 	app.BuildCatalogClient()
 	app.BuildRepoOrder()
 	app.BuildServiceOrder()

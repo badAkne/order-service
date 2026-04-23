@@ -10,9 +10,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"github.com/badAkne/order-service/internal/app/config/section"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
+	"github.com/badAkne/order-service/internal/app/pkg/constant"
 	"github.com/badAkne/order-service/internal/app/processor"
 	"github.com/badAkne/order-service/internal/app/util"
 	"github.com/badAkne/order-service/internal/pkg/http/httph"
@@ -30,9 +32,14 @@ func NewHTTP(
 	_ []httph.Middleware,
 	cfg section.ProcessorWebServer,
 ) *Processor {
-	r := gin.Default()
+	r := gin.New()
 
 	r.Use(
+		otelgin.Middleware(constant.AppName,
+			otelgin.WithFilter(func(r *http.Request) bool {
+				return !util.IsFilteredWithHttp(r)
+			})),
+
 		httph.NewErrorMiddleware(),
 
 		mzerolog.NewMiddleware(
