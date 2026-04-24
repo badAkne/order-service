@@ -215,6 +215,25 @@ func (b *Builder) BuilMonitorPrometheus() {
 	})
 }
 
+func (b *Builder) BuildMonitorOpenTelemetry() {
+	cfg := b.cfg.Monitor.OpenTelemetry
+	if !cfg.Enabled {
+		log.Info().Msg("OpenTelemetry is disabled")
+		return
+	}
+
+	b.exec(true, func(b *Builder) {
+		proc := mprocessor.NewOpenTelemetryController(
+			b.ctx,
+			b.cfg.Monitor.Environment,
+			cfg,
+		)
+		b.processors = append(b.processors, proc)
+	})
+
+	log.Info().Msg("OpenTelemetry is initialized & enabled")
+}
+
 func (b *Builder) waitForSignal(sig chan os.Signal, cancel func()) {
 	defer cancel()
 	signal := <-sig
