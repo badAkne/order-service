@@ -49,6 +49,7 @@ func NewHTTP(
 		makeErrorMiddleware(),
 	)
 	GenericRegHealthCheck(r, hHealth)
+	GenericRegPprof(r)
 	GenericRegMetrics(r)
 
 	v1 := r.Group("/v1")
