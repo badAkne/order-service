@@ -56,6 +56,7 @@ func NewOpenTelemetryController(
 	//nolint:staticcheck
 	conn, err := grpc.DialContext(ctx, cfg.Address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		//nolint:staticcheck
 		grpc.WithBlock())
 	if err != nil {
 		cleanupAndFatal(cancel, err)
