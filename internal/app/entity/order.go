@@ -11,6 +11,10 @@ const (
 	OrderStatusCancelled = "cancelled"
 	OrderStatusDelivered = "delivered"
 	OrderStatusShipped   = "shipped"
+
+	EventOrderHeaderTypeKey = "type"
+
+	EventOrderHeaderCreated = "order.created"
 )
 
 type Order struct {
@@ -80,4 +84,19 @@ type ResponseOrderItemCreate struct {
 	ProductGUID uuid.UUID `json:"product_guid"`
 	Quantity    int64     `json:"quantity"`
 	UnitPrice   float32   `json:"unit_price"`
+}
+
+type EventOrderCreated struct {
+	OrderID     string           `json:"order_id"`
+	UserID      string           `json:"user_id"`
+	TotalAmount float64          `json:"total_amount"`
+	Currency    string           `json:"currency"`
+	Items       []EventOrderItem `json:"items"`
+	CreatedAt   string           `json:"created_at"`
+}
+
+type EventOrderItem struct {
+	ProductID string  `json:"product_id"`
+	Quantity  int     `json:"quantity"`
+	Price     float64 `json:"price"`
 }

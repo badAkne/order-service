@@ -15,11 +15,11 @@ import (
 type Config struct {
 	App        section.App
 	Repository section.Repository
-	// Broker     section.Broker
-	Processor section.Processor
-	Monitor   section.Monitor
-	Client    section.ClientCatalog
-	Meta      Meta `ignore:"true"`
+	Broker     section.Broker
+	Processor  section.Processor
+	Monitor    section.Monitor
+	Client     section.ClientCatalog
+	Meta       Meta `ignore:"true"`
 }
 
 type Meta struct {

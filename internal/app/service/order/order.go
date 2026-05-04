@@ -7,22 +7,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	catalog "github.com/badAkne/order-service/internal/app/client"
 	"github.com/badAkne/order-service/internal/app/entity"
 	"github.com/badAkne/order-service/internal/app/repository"
 	rservice "github.com/badAkne/order-service/internal/app/service"
+	"github.com/badAkne/order-service/pkg/broker"
 )
 
 type service struct {
-	repoOrder     repository.Order
-	catalogClient *catalog.CatalogClient
+	repoOrder       repository.Order
+	catalogClient   *catalog.CatalogClient
+	busOrderCreated broker.Bus[entity.EventOrderCreated]
 }
 
-func NewService(repoOrder repository.Order, catalogClient *catalog.CatalogClient) rservice.Order {
+func NewService(repoOrder repository.Order, catalogClient *catalog.CatalogClient, busOrderCreated broker.Bus[entity.EventOrderCreated]) rservice.Order {
 	return &service{
-		repoOrder:     repoOrder,
-		catalogClient: catalogClient,
+		repoOrder:       repoOrder,
+		catalogClient:   catalogClient,
+		busOrderCreated: busOrderCreated,
 	}
 }
 
@@ -58,7 +62,33 @@ func (s *service) Create(ctx context.Context, req entity.RequestOrderCreate) (en
 		return entity.ResponseOrderCreate{}, fmt.Errorf("unable to create order: %w", err)
 	}
 
-	fmt.Println(createdOrder)
+	eventOrderItems := make([]entity.EventOrderItem, 0, len(createdOrder.Items))
+
+	for _, item := range createdOrder.Items {
+
+		orderItem := entity.EventOrderItem{
+			ProductID: item.GUID.String(),
+			Quantity:  int(item.Quantity),
+			Price:     float64(item.UnitPrice),
+		}
+
+		eventOrderItems = append(eventOrderItems, orderItem)
+	}
+
+	eventOrderCreated := entity.EventOrderCreated{
+		UserID:      createdOrder.UserGUID.String(),
+		TotalAmount: float64(createdOrder.TotalPrice),
+		Currency:    createdOrder.Currency,
+		Items:       eventOrderItems,
+		CreatedAt:   createdOrder.CreatedAt.String(),
+	}
+
+	err = s.busOrderCreated.Send(ctx, &eventOrderCreated)
+	if err != nil {
+		log.Error().Err(err).Any("data", &eventOrderCreated).Msg("unable to send msg to kafka")
+	} else {
+		log.Info().Any("data", &eventOrderCreated).Msg("msg sent to kafka")
+	}
 
 	return s.convertToResponseCreate(createdOrder, cartPrice), nil
 }
