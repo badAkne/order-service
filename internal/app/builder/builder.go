@@ -14,6 +14,7 @@ import (
 
 	catalog "github.com/badAkne/order-service/internal/app/client"
 	"github.com/badAkne/order-service/internal/app/config"
+	"github.com/badAkne/order-service/internal/app/entity"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
 	rhealth "github.com/badAkne/order-service/internal/app/handler/health"
 	rorder "github.com/badAkne/order-service/internal/app/handler/order"
@@ -25,6 +26,9 @@ import (
 	porder "github.com/badAkne/order-service/internal/app/repository/order"
 	rservice "github.com/badAkne/order-service/internal/app/service"
 	morder "github.com/badAkne/order-service/internal/app/service/order"
+	"github.com/badAkne/order-service/pkg/broker"
+	"github.com/badAkne/order-service/pkg/broker/codec"
+	butil "github.com/badAkne/order-service/pkg/broker/util"
 )
 
 type Builder struct {
@@ -36,9 +40,12 @@ type Builder struct {
 
 	connPostgres *rcpostgres.Client
 
-	orderRepo    repository.Order
-	orderSerivce rservice.Order
-	orderHandler rhandler.Order
+	orderRepo repository.Order
+
+	brokerKafka     broker.KafkaClient
+	busOrderCreated broker.Bus[entity.EventOrderCreated]
+	orderSerivce    rservice.Order
+	orderHandler    rhandler.Order
 
 	healthHandler rhandler.Health
 	catalogClient *catalog.CatalogClient
@@ -156,6 +163,39 @@ func (b *Builder) BuildRepoConnPostgres() {
 	})
 }
 
+func (b *Builder) BuildBrokerKafka() {
+	b.exec(true, (*Builder).buildBrokerKafka)
+}
+
+func (b *Builder) buildBrokerKafka() {
+	kafkaCfg := broker.KafkaConfig{
+		Addresses:     b.cfg.Broker.Kafka.Addresses,
+		ConsumerGroup: b.cfg.Broker.Kafka.ConsumerGroup,
+		ClientID:      b.cfg.Broker.Kafka.ClientID,
+	}
+
+	log.Debug().
+		Any("addresses", kafkaCfg.Addresses).
+		Str("group", kafkaCfg.ConsumerGroup).
+		Msg("kafka config")
+
+	kafkaClient, err := broker.NewKafkaClient(kafkaCfg)
+	if err != nil {
+		b.err = err
+		return
+	}
+
+	b.brokerKafka = *kafkaClient
+
+	type T1 = entity.EventOrderCreated
+
+	codec := codec.NewCodecJson[T1]()
+
+	bus := broker.MustKafkaBus(kafkaClient, codec, b.cfg.Broker.Kafka.ModelOrder.Created.Topic, butil.Coalesce(b.cfg.Broker.Kafka.ModelOrder.Created.ConsumerGroup, b.cfg.Broker.Kafka.ConsumerGroup))
+
+	b.busOrderCreated = bus
+}
+
 func (b *Builder) BuildCatalogClient() {
 	b.exec(true, func(b *Builder) {
 		catalogAddr := b.cfg.Client.GrpcAddr
@@ -184,8 +224,8 @@ func (b *Builder) BuildRepoOrder() {
 
 func (b *Builder) BuildServiceOrder() {
 	b.exec(true, func(b *Builder) {
-		b.orderSerivce = morder.NewService(b.orderRepo, b.catalogClient)
-	}, b.orderRepo, b.catalogClient)
+		b.orderSerivce = morder.NewService(b.orderRepo, b.catalogClient, b.busOrderCreated)
+	}, b.orderRepo, b.catalogClient, b.busOrderCreated)
 }
 
 func (b *Builder) BuildHandlerHttpOrder() {
