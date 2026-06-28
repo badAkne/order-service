@@ -21,7 +21,7 @@ func main() {
 		Name:     "order-service",
 		Version:  "1.0",
 		Usage:    "order-service [global options] command [command options]",
-		Commands: []*cli.Command{cmd.WebServer()},
+		Commands: []*cli.Command{cmd.WebServer(), cmd.DeliveryConsumer()},
 		Flags:    []cli.Flag{flag},
 	}
 

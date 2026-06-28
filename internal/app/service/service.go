@@ -14,6 +14,7 @@ type Order interface {
 	Get(ctx context.Context, guid uuid.UUID) (entity.ResponseOrderCreate, error)
 	Update(ctx context.Context, guid uuid.UUID, status string) (entity.ResponseOrderCreate, error)
 	Delete(ctx context.Context, guid uuid.UUID) error
+	UpdateDeliveryPrice(ctx context.Context, guid uuid.UUID, price float64) error
 }
 
 type Metered interface {

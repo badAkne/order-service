@@ -14,11 +14,17 @@ type (
 	}
 
 	BrokerKafkaModelOrder struct {
-		Created BrokerKafkaModelOrderCreated `split_words:"true"`
+		Created           BrokerKafkaModelOrderCreated            `split_words:"true"`
+		DeliverCalculated BrokerKafkaModelOrderDeliveryCalculated `split_words:"true"`
 	}
 
 	BrokerKafkaModelOrderCreated struct {
 		Topic         string `required:"true" default:"order.created"`
 		ConsumerGroup string `split_words:"true"` // only for sub, has priority
+	}
+
+	BrokerKafkaModelOrderDeliveryCalculated struct {
+		Topic         string `required:"true" default:"order.delivery.calculated"`
+		ConsumerGroup string `split_words:"true"`
 	}
 )

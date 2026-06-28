@@ -76,6 +76,7 @@ func (s *service) Create(ctx context.Context, req entity.RequestOrderCreate) (en
 	}
 
 	eventOrderCreated := entity.EventOrderCreated{
+		OrderID:     createdOrder.GUID.String(),
 		UserID:      createdOrder.UserGUID.String(),
 		TotalAmount: float64(createdOrder.TotalPrice),
 		Currency:    createdOrder.Currency,
@@ -275,4 +276,8 @@ func (s *service) validatePricesBeforeShipping(ctx context.Context, order entity
 	}
 
 	return nil
+}
+
+func (s *service) UpdateDeliveryPrice(ctx context.Context, guid uuid.UUID, price float64) error {
+	return s.repoOrder.UpdateDeliveryPrice(ctx, guid, price)
 }

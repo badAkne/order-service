@@ -109,7 +109,10 @@ func (b *kafkaBus[T]) Subscribe(ctx context.Context, wg *sync.WaitGroup, handler
 
 	b.consumer = consumer
 
-	consumerHandler := consumerGroupHandler[T]{}
+	consumerHandler := consumerGroupHandler[T]{
+		codec:   codec.NewCodecJson[T](),
+		handler: handler,
+	}
 	if wg != nil {
 		wg.Add(1)
 	}

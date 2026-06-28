@@ -17,6 +17,10 @@ func ScanAndValidateQuery(r *http.Request, to any) error {
 	return scanAndValidate(r, to, bQuery)
 }
 
+func OnlyValidate(to any) error {
+	return scanAndValidate(nil, to, bOnlyValidate)
+}
+
 func scanAndValidate(r *http.Request, to any, b Binding) error {
 	err := b.Bind(r, to)
 	if errors.Is(err, nil) {
@@ -28,6 +32,8 @@ func scanAndValidate(r *http.Request, to any, b Binding) error {
 		return &validationFailedError{validationErr}
 	}
 
-	httph.ErrorApplyDetail(r, "Malformed HTTP request "+b.Name()+" source")
+	if r != nil {
+		httph.ErrorApplyDetail(r, "Malformed HTTP request "+b.Name()+" source")
+	}
 	return ErrMalformedSource
 }
