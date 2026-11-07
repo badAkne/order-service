@@ -100,3 +100,10 @@ type EventOrderItem struct {
 	Quantity  int     `json:"quantity"`
 	Price     float64 `json:"price"`
 }
+
+type EventOrderDeliveryCalculated struct {
+	OrderID       string  `json:"order_id"`
+	DeliveryPrice float64 `json:"delivery_price"`
+	Currency      string  `json:"currency"`
+	CalculatedAt  string  `json:"calculated_at"`
+}

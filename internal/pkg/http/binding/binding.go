@@ -28,8 +28,9 @@ type StructValidator interface {
 var Validator StructValidator = &defaultValidator{}
 
 var (
-	bJSON  = jsonBinding{}
-	bQuery = queryBinding{}
+	bJSON         = jsonBinding{}
+	bQuery        = queryBinding{}
+	bOnlyValidate = onlyValidateBinding{}
 )
 
 func validate(obj any) error {
@@ -38,4 +39,14 @@ func validate(obj any) error {
 	}
 
 	return Validator.ValidateStruct(obj)
+}
+
+type onlyValidateBinding struct{}
+
+func (onlyValidateBinding) Name() string {
+	return "OnlyValidate"
+}
+
+func (onlyValidateBinding) Bind(_ *http.Request, obj any) error {
+	return validate(obj)
 }

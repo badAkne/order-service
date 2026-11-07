@@ -82,3 +82,19 @@ func (r *repoPG) Delete(ctx context.Context, guid uuid.UUID) error {
 
 	return nil
 }
+
+func (r *repoPG) UpdateDeliveryPrice(ctx context.Context, guid uuid.UUID, price float64) error {
+	db := rcpostgres.GetTxFromCtx(ctx, r.db)
+
+	res := db.WithContext(ctx).Model(&entity.Order{}).Where("guid = ?", guid).Update("delivery_price", price)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return entity.ErrNotFound
+	}
+
+	return nil
+}

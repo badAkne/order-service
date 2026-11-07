@@ -8,7 +8,7 @@ OUTPUT := ./bin/app
 GO_LINT_VERSION := 2.7.2
 GO_FILE := ./main.go
 CUR_MIGRATION_DIR=${MIGRATION_DIR}
-MIGRATION_DSN="postgres://$(APP_REPOSITORY_POSTGRES_USER):$(APP_REPOSITORY_POSTGRES_PASSWORD)@$(APP_REPOSITORY_POSTGRES_HOST):$(APP_REPOSITORY_POSTGRES_PORT)/$(APP_REPOSITORY_POSTGRES_NAME)?sslmode=$(APP_REPOSITORY_POSTGRES_SSL_MODE)"
+MIGRATION_DSN="postgres://$(APP_REPOSITORY_POSTGRES_USERNAME):$(APP_REPOSITORY_POSTGRES_PASSWORD)@$(APP_REPOSITORY_POSTGRES_HOST):$(APP_REPOSITORY_POSTGRES_PORT)/$(APP_REPOSITORY_POSTGRES_NAME)?sslmode=$(APP_REPOSITORY_POSTGRES_SSL_MODE)"
 # =============================================================================
 # Справка
 # =============================================================================
@@ -104,7 +104,9 @@ gen:
 	rm -rf internal/catalog/gen
 	mkdir internal/catalog/gen
 	export PATH=$$PATH:$$HOME/go/bin && protoc $(PROTO_DIRS) \
-		--go_out=internal/catalog/gen --go_opt=paths=source_relative \
+		--go_out=internal/catalog/gen --go_opt=paths=source_relative \The first option (copying .env.docker to .env) is simpler if you're using those settings locally.
+		
+		
 		--go-grpc_out=internal/catalog/gen --go-grpc_opt=paths=source_relative \
 		--go-grpc_opt=require_unimplemented_servers=false \
 		$(PROTO_FILES)

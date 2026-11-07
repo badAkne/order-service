@@ -20,4 +20,4 @@ COPY .env .
 
 EXPOSE 9020
 
-ENTRYPOINT ["./main","web"]
+ENTRYPOINT ["./main"]

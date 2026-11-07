@@ -16,6 +16,7 @@ type (
 		Get(ctx context.Context, guid uuid.UUID) (entity.Order, error)
 		Update(ctx context.Context, guid uuid.UUID, status string) (entity.Order, error)
 		Delete(ctx context.Context, guid uuid.UUID) error
+		UpdateDeliveryPrice(ctx context.Context, guid uuid.UUID, price float64) error
 	}
 
 	Transactional interface {

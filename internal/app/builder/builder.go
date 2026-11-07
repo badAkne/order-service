@@ -16,9 +16,12 @@ import (
 	"github.com/badAkne/order-service/internal/app/config"
 	"github.com/badAkne/order-service/internal/app/entity"
 	rhandler "github.com/badAkne/order-service/internal/app/handler"
+	ehandler "github.com/badAkne/order-service/internal/app/handler/event"
+	edelivery "github.com/badAkne/order-service/internal/app/handler/event/delivery"
 	rhealth "github.com/badAkne/order-service/internal/app/handler/health"
 	rorder "github.com/badAkne/order-service/internal/app/handler/order"
 	"github.com/badAkne/order-service/internal/app/processor"
+	eprocessor "github.com/badAkne/order-service/internal/app/processor/event"
 	rprocessor "github.com/badAkne/order-service/internal/app/processor/http"
 	mprocessor "github.com/badAkne/order-service/internal/app/processor/monitor"
 	"github.com/badAkne/order-service/internal/app/repository"
@@ -42,13 +45,15 @@ type Builder struct {
 
 	orderRepo repository.Order
 
-	brokerKafka     broker.KafkaClient
-	busOrderCreated broker.Bus[entity.EventOrderCreated]
-	orderSerivce    rservice.Order
-	orderHandler    rhandler.Order
+	brokerKafka           broker.KafkaClient
+	busOrderCreated       broker.Bus[entity.EventOrderCreated]
+	busDeliveryCalculated broker.Bus[entity.EventOrderDeliveryCalculated]
+	orderSerivce          rservice.Order
+	orderHandler          rhandler.Order
 
-	healthHandler rhandler.Health
-	catalogClient *catalog.CatalogClient
+	healthHandler             rhandler.Health
+	catalogClient             *catalog.CatalogClient
+	handlerDeliveryCalculated ehandler.Delivery
 
 	processors []processor.Processor
 
@@ -188,12 +193,13 @@ func (b *Builder) buildBrokerKafka() {
 	b.brokerKafka = *kafkaClient
 
 	type T1 = entity.EventOrderCreated
+	type T2 = entity.EventOrderDeliveryCalculated
 
-	codec := codec.NewCodecJson[T1]()
+	codecOrder := codec.NewCodecJson[T1]()
+	codecDelivery := codec.NewCodecJson[T2]()
 
-	bus := broker.MustKafkaBus(kafkaClient, codec, b.cfg.Broker.Kafka.ModelOrder.Created.Topic, butil.Coalesce(b.cfg.Broker.Kafka.ModelOrder.Created.ConsumerGroup, b.cfg.Broker.Kafka.ConsumerGroup))
-
-	b.busOrderCreated = bus
+	b.busOrderCreated = broker.MustKafkaBus(kafkaClient, codecOrder, b.cfg.Broker.Kafka.ModelOrder.Created.Topic, butil.Coalesce(b.cfg.Broker.Kafka.ModelOrder.Created.ConsumerGroup, b.cfg.Broker.Kafka.ConsumerGroup))
+	b.busDeliveryCalculated = broker.MustKafkaBus(kafkaClient, codecDelivery, b.cfg.Broker.Kafka.ModelOrder.DeliverCalculated.Topic, butil.Coalesce(b.cfg.Broker.Kafka.ModelOrder.DeliverCalculated.ConsumerGroup, b.cfg.Broker.Kafka.ConsumerGroup))
 }
 
 func (b *Builder) BuildCatalogClient() {
@@ -272,6 +278,18 @@ func (b *Builder) BuildMonitorOpenTelemetry() {
 	})
 
 	log.Info().Msg("OpenTelemetry is initialized & enabled")
+}
+
+func (b *Builder) BuildHandlerDeliveryCalculated() {
+	b.exec(true, func(b *Builder) {
+		b.handlerDeliveryCalculated = edelivery.NewHandler(b.orderSerivce)
+	}, b.orderSerivce)
+}
+
+func (b *Builder) BuildProcEventDeliveryCalculated() {
+	b.exec(true, func(b *Builder) {
+		b.processors = append(b.processors, eprocessor.NewDeliveryCalculatedEventsCatcher(b.handlerDeliveryCalculated, b.busDeliveryCalculated))
+	}, b.handlerDeliveryCalculated, b.busDeliveryCalculated)
 }
 
 func (b *Builder) waitForSignal(sig chan os.Signal, cancel func()) {
